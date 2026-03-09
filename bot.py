@@ -18,22 +18,34 @@ headers = {
 }
 
 async def get_matches(league_id, league_name):
-    """Реальные матчи"""
+    """ЖИВЫЕ матчи Локо vs Ахмат"""
+    url = "https://v3.football.api-sports.io/fixtures"
+    params = {
+        "league": str(league_id),
+        "season": "2025",
+        "status": "LIV,FT,HT"  # LIVE + завершённые
+    }
+    
     try:
-        url = "https://v3.football.api-sports.io/fixtures"
-        params = {"date": "2026-03-09", "league": str(league_id), "season": "2025"}
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers, params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     matches = data["response"][:3]
                     if matches:
-                        result = f"⚽ <b>{league_name}:</b>\n\n"
+                        result = f"⚽ <b>{league_name} LIVE:</b>\n\n"
                         for match in matches:
                             home = match["teams"]["home"]["name"]
                             away = match["teams"]["away"]["name"]
+                            status = match["fixture"]["status"]["short"]
                             time = match["fixture"]["date"][11:16]
-                            result += f"• <b>{home}</b> vs <b>{away}</b> ({time})\n"
+                            score = f"{match['goals']['home'] or 0}:{match['goals']['away'] or 0}"
+                            result += f"🔴 <b>{home}</b> {score} <b>{away}</b> {status}\n"
+                        return result
+    except:
+        pass
+    return f"⚽ Матчей {league_name} сейчас нет"
+
                         return result
     except:
         pass
