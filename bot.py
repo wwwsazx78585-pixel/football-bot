@@ -1,29 +1,48 @@
-@dp.callback_query(F.data == "predict")
-async def ml_predict(callback: types.CallbackQuery):
-    # ML-модель (упрощённая, на основе формы команд + H2H)
-    home_ml = 0.65  # Спартак: 3 победы из 5
-    draw_ml = 0.20  # Ничьи: 1 из 5  
-    away_ml = 0.15  # Зенит: 1 победа из 5
-    
-    # H2H статистика (история встреч)
-    h2h_home = 12  # Спартак побед
-    h2h_draw = 5   # Ничьи
-    h2h_away = 8   # Зенит побед
-    
-    await callback.message.answer(
-        "🤖 <b>ML-ПРОГНОЗ (нейросеть):</b>\n\n"
-        "🏠 <b>Спартак</b> vs <b>Зенит</b>\n"
-        "⏰ 18:00 РПЛ | Арена\n\n"
-        f"📊 <b>Вероятности:</b>\n"
-        f"🏆 П1: <b>{home_ml*100:.0f}%</b>\n"
-        f"🤝 X: <b>{draw_ml*100:.0f}%</b>\n" 
-        f"🔥 П2: <b>{away_ml*100:.0f}%</b>\n\n"
-        f"⚔️ <b>H2H (20 матчей):</b>\n"
-        f"Спартак: {h2h_home} | {h2h_draw} | Зенит: {h2h_away}\n\n"
-        f"💰 <b>РЕКОМЕНДАЦИЯ: П1 @2.10</b>\n"
-        f"💵 <b>EV: +38%</b> (ожидаемая прибыль)", 
-        parse_mode="HTML"
-    )
-    await callback.answer("ML готов!")
+import asyncio
+import os
+import aiohttp
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+TOKEN = os.getenv("TOKEN")
+API_KEY = os.getenv("API_KEY")
+
+if not TOKEN:
+    print("🚫 TOKEN не найден!")
+    exit()
+
+headers = {
+    "X-RapidAPI-Key": API_KEY or "",
+    "X-RapidAPI-Host": "v3.football.api-sports.io"
+}
+
+async def get_matches(league_id, league_name):
+    """Реальные матчи"""
+    try:
+        url = "https://v3.football.api-sports.io/fixtures"
+        params = {"date": "2026-03-09", "league": str(league_id), "season": "2025"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    matches = data["response"][:3]
+                    if matches:
+                        result = f"⚽ <b>{league_name}:</b>\n\n"
+                        for match in matches:
+                            home = match["teams"]["home"]["name"]
+                            away = match["teams"]["away"]["name"]
+                            time = match["fixture"]["date"][11:16]
+                            result += f"• <b>{home}</b> vs <b>{away}</b> ({time})\n"
+                        return result
+    except:
+        pass
+    return f"⚽ Матчей {league_name} сегодня нет"
+
+bot = Bot(token=TOKEN)
+dp = Dispatcher()  # ← ЭТО ЗДЕСЬ!
+
+@dp.message(Command("start"))
+async def start(message:
 
 
