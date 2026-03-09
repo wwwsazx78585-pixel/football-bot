@@ -70,7 +70,7 @@ LEAGUES = {
             ("Барселона", "Арсенал", "15.03 20:00"),
             ("Интер", "Боруссия Д", "15.03 18:00"),
             ("Ливерпуль", "Порту", "14.03 20:00"),
-            ("Бавария", "Атлетико М", "15.03 21:00")
+            ("Атлетико М", "Бавария", "15.03 21:00")
         ]
     }
 }
@@ -190,5 +190,67 @@ async def league_tour(callback: types.CallbackQuery):
     await callback.answer(f"{len(league['matches'])} матчей {league['name']}")
 
 @dp.callback_query(F.data.startswith("match_"))
-async def match_detail
+async def match_detail(callback: types.CallbackQuery):
+    _, league_code, match_idx = callback.data.split("_")
+    match_idx = int(match_idx)
+    league = LEAGUES[league_code]
+    
+    home, away, date = league['matches'][match_idx]
+    forecast = get_match_forecast(home, away, date)
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⬅️ Все матчи лиги", callback_data=f"{league_code}_tour")],
+        [InlineKeyboardButton(text="🏠 Главное меню", callback_data="start")]
+    ])
+    
+    await callback.message.edit_text(forecast, reply_markup=keyboard, parse_mode="HTML")
+    await callback.answer(f"Прогноз: {home} vs {away}")
+
+@dp.callback_query(F.data == "top_forecasts")
+async def top_forecasts(callback: types.CallbackQuery):
+    result = "🏆 <b>ТОП-6 ПРОГНОЗОВ ТУРА (вкл. ЛЧ)</b>\n\n"
+    top_matches = [
+        ("⭐ Реал vs Бавария", "ТБ2.5 60%"),
+        ("🇷🇺 Спартак vs Краснодар", "ТБ4.5 карт. 65%"),
+        ("🏴󠁧󠁢󠁥󠁮󠁧󠁿 Арсенал vs Ман Сити", "ТБ9.5 угл. 58%"),
+        ("🇪🇸 Атлетико vs Севилья", "П1 55%"),
+        ("🇩🇪 Бавария vs Боруссия Д", "П1 65%"),
+        ("🇫🇷 ПСЖ vs Монако", "ТБ2.5 62%")
+    ]
+    
+    for match, bet in top_matches:
+        result += f"• <b>{match}</b>\n  {bet}\n\n"
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📅 Тур 6 лиг", callback_data="all_tour")]
+    ])
+    
+    await callback.message.answer(result, reply_markup=keyboard, parse_mode="HTML")
+    await callback.answer()
+
+@dp.callback_query(F.data == "leagues")
+async def league_menu(callback: types.CallbackQuery):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📅 Тур 6 лиг", callback_data="all_tour")],
+        [InlineKeyboardButton(text="⭐ ЛЧ матчи", callback_data="ucl_tour")],
+        [InlineKeyboardButton(text="🔮 Топ-прогнозы", callback_data="top_forecasts")]
+    ])
+    await callback.message.edit_text("🏠 <b>ГЛАВНОЕ МЕНЮ — 6 ЛИГ</b>", reply_markup=keyboard, parse_mode="HTML")
+    await callback.answer()
+
+@dp.message(Command("predict"))
+async def cmd_predict(message: types.Message):
+    forecast = get_match_forecast("Реал Мадрид", "Бавария", "14.03 21:00")
+    await message.answer(forecast, parse_mode="HTML")
+
+@dp.message()
+async def echo(message: types.Message):
+    await message.answer("📱 /start — 36+ матчей 6 лиг!\n⭐ ЛЧ + 5 чемпионатов")
+
+async def main():
+    print("🚀 СТАВКИ v6.2 — 6 ЛИГ + ЛЧ!")
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
