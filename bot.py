@@ -19,10 +19,11 @@ headers = {
 
 async def get_matches(league_id, league_name):
     url = "https://v3.football.api-sports.io/fixtures"
+    today = "2026-03-09"
     params = {
+        "date": today,
         "league": str(league_id),
-        "season": "2025",
-        "status": "LIV,FT,HT"
+        "season": "2025"
     }
     
     try:
@@ -32,17 +33,18 @@ async def get_matches(league_id, league_name):
                     data = await resp.json()
                     matches = data["response"][:3]
                     if matches:
-                        result = f"⚽ <b>{league_name} LIVE:</b>\n\n"
+                        result = f"⚽ <b>{league_name} {today}:</b>\n\n"
                         for match in matches:
                             home = match["teams"]["home"]["name"]
                             away = match["teams"]["away"]["name"]
                             status = match["fixture"]["status"]["short"]
-                            score = f"{match['goals']['home'] or 0}:{match['goals']['away'] or 0}"
-                            result += f"🔴 <b>{home}</b> {score} <b>{away}</b> {status}\n"
+                            time = match["fixture"]["date"][11:16]
+                            score = f"{match['goals']['home'] or '?'}:{match['goals']['away'] or '?'}"
+                            result += f"• <b>{home}</b> {score} <b>{away}</b> {status} ({time})\n"
                         return result
     except:
         pass
-    return f"⚽ Матчей {league_name} сейчас нет"
+    return f"⚽ Матчей {league_name} {today} нет"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
