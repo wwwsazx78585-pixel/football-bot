@@ -11,7 +11,7 @@ if not TOKEN:
     print("🚫 TOKEN не найден!")
     exit()
 
-# 5 ЛИГ — ВСЕ МАТЧИ ТУРА (14-15 марта 2026)
+# 6 ЛИГ — ВСЕ МАТЧИ ТУРА (14-15 марта 2026)
 LEAGUES = {
     "rpl": {
         "flag": "🇷🇺", "name": "РПЛ", "matches": [
@@ -62,6 +62,16 @@ LEAGUES = {
             ("Унион Б", "Фрайбург", "15.03 15:30"),
             ("Кёльн", "Гамбург", "14.03 20:00")
         ]
+    },
+    "ucl": {
+        "flag": "⭐", "name": "ЛИГА ЧЕМПИОНОВ", "matches": [
+            ("Реал Мадрид", "Бавария", "14.03 21:00"),
+            ("ПСЖ", "Ман Сити", "14.03 20:45"),
+            ("Барселона", "Арсенал", "15.03 20:00"),
+            ("Интер", "Боруссия Д", "15.03 18:00"),
+            ("Ливерпуль", "Порту", "14.03 20:00"),
+            ("Бавария", "Атлетико М", "15.03 21:00")
+        ]
     }
 }
 
@@ -94,15 +104,15 @@ dp = Dispatcher()
 @dp.message(Command("start"))
 async def start(message: types.Message):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📅 Все матчи тура", callback_data="all_tour")],
+        [InlineKeyboardButton(text="📅 Тур 6 лиг", callback_data="all_tour")],
+        [InlineKeyboardButton(text="⭐ ЛЧ матчи", callback_data="ucl_tour")],
         [InlineKeyboardButton(text="🔮 Топ-прогнозы", callback_data="top_forecasts")],
-        [InlineKeyboardButton(text="📊 Выбрать лигу", callback_data="leagues")]
+        [InlineKeyboardButton(text="📊 Лиги", callback_data="leagues")]
     ])
     await message.answer(
-        "⚽ <b>СТАВКИ v6.1 — ВСЕ МАТЧИ ТУРА</b>\n\n"
-        "✅ <b>30+ матчей</b> 5 лиг\n"
-        "✅ <b>Каждый матч</b> с датой и прогнозами\n"
-        "✅ <b>Топ-3 ставки</b> для каждого матча\n\n"
+        "⚽ <b>СТАВКИ v6.2 — 6 ЛИГ!</b>\n\n"
+        "✅ <b>36+ матчей:</b> РПЛ | АПЛ | Ла Лига | Лига 1 | Бундеслига | <b>⭐ ЛЧ</b>\n"
+        "✅ <b>Каждый матч</b> с датой и топ-3 ставками\n\n"
         "Выбери:", 
         reply_markup=keyboard, 
         parse_mode="HTML"
@@ -110,7 +120,7 @@ async def start(message: types.Message):
 
 @dp.callback_query(F.data == "all_tour")
 async def all_tour_matches(callback: types.CallbackQuery):
-    result = "📅 <b>ТУР 5 ЛИГ (14-15 марта)</b>\n\n"
+    result = "📅 <b>ТУР 6 ЛИГ (14-15 марта)</b>\n\n"
     
     total_matches = 0
     for code, league in LEAGUES.items():
@@ -126,12 +136,35 @@ async def all_tour_matches(callback: types.CallbackQuery):
         [InlineKeyboardButton(text="🇷🇺 РПЛ (6)", callback_data="rpl_tour")],
         [InlineKeyboardButton(text="🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ (6)", callback_data="epl_tour")],
         [InlineKeyboardButton(text="🇪🇸 Ла Лига (6)", callback_data="laliga_tour")],
+        [InlineKeyboardButton(text="⭐ ЛЧ (6)", callback_data="ucl_tour")],
         [InlineKeyboardButton(text="🇫🇷 Лига 1 (6)", callback_data="ligue1_tour")],
         [InlineKeyboardButton(text="🇩🇪 Бундеслига (6)", callback_data="bundesliga_tour")]
     ])
     
     await callback.message.edit_text(result, reply_markup=keyboard, parse_mode="HTML")
     await callback.answer()
+
+@dp.callback_query(F.data == "ucl_tour")
+async def ucl_tour(callback: types.CallbackQuery):
+    league = LEAGUES["ucl"]
+    
+    result = f"{league['flag']} <b>{league['name']} — ВСЕ МАТЧИ ТУРА</b>\n\n"
+    
+    match_keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    for i, (home, away, date) in enumerate(league['matches']):
+        btn_text = f"{home[:12]} vs {away[:12]}"
+        match_keyboard.inline_keyboard.append([
+            InlineKeyboardButton(text=btn_text, callback_data=f"match_ucl_{i}")
+        ])
+        
+        result += f"{i+1}. <b>{home}</b> vs <b>{away}</b>\n"
+        result += f"   📅 {date}\n\n"
+    
+    back_btn = InlineKeyboardButton(text="⬅️ Все лиги", callback_data="all_tour")
+    match_keyboard.inline_keyboard.append([back_btn])
+    
+    await callback.message.edit_text(result, reply_markup=match_keyboard, parse_mode="HTML")
+    await callback.answer("⭐ ЛЧ — 6 топ-матчей!")
 
 @dp.callback_query(F.data.endswith("_tour"))
 async def league_tour(callback: types.CallbackQuery):
@@ -150,73 +183,12 @@ async def league_tour(callback: types.CallbackQuery):
         result += f"{i+1}. <b>{home}</b> vs <b>{away}</b>\n"
         result += f"   📅 {date}\n\n"
     
-    back_btn = InlineKeyboardButton(text="⬅️ Назад", callback_data="all_tour")
+    back_btn = InlineKeyboardButton(text="⬅️ Все лиги", callback_data="all_tour")
     match_keyboard.inline_keyboard.append([back_btn])
     
     await callback.message.edit_text(result, reply_markup=match_keyboard, parse_mode="HTML")
     await callback.answer(f"{len(league['matches'])} матчей {league['name']}")
 
 @dp.callback_query(F.data.startswith("match_"))
-async def match_detail(callback: types.CallbackQuery):
-    _, league_code, match_idx = callback.data.split("_")
-    match_idx = int(match_idx)
-    league = LEAGUES[league_code]
-    
-    home, away, date = league['matches'][match_idx]
-    forecast = get_match_forecast(home, away, date)
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⬅️ Все матчи лиги", callback_data=f"{league_code}_tour")],
-        [InlineKeyboardButton(text="🏠 Главное меню", callback_data="start")]
-    ])
-    
-    await callback.message.edit_text(forecast, reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer(f"Прогноз: {home} vs {away}")
+async def match_detail
 
-@dp.callback_query(F.data == "top_forecasts")
-async def top_forecasts(callback: types.CallbackQuery):
-    result = "🏆 <b>ТОП-6 ПРОГНОЗОВ ТУРА</b>\n\n"
-    
-    top_matches = [
-        ("Реал Мадрид vs Барселона", "ТБ2.5 60%"),
-        ("Бавария vs Боруссия Д", "П1 65%"),
-        ("Арсенал vs Ман Сити", "ТБ9.5 угл. 58%"),
-        ("Спартак vs Краснодар", "ТБ4.5 карт. 65%"),
-        ("ПСЖ vs Монако", "П1 62%"),
-        ("Зенит vs Динамо", "ТБ2.5 60%")
-    ]
-    
-    for match, bet in top_matches:
-        result += f"• <b>{match}</b>\n  {bet}\n\n"
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📅 Все матчи", callback_data="all_tour")]
-    ])
-    
-    await callback.message.answer(result, reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer()
-
-@dp.callback_query(F.data == "leagues")
-async def league_menu(callback: types.CallbackQuery):
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📅 Все матчи тура", callback_data="all_tour")],
-        [InlineKeyboardButton(text="🔮 Топ-прогнозы", callback_data="top_forecasts")]
-    ])
-    await callback.message.edit_text("🏠 <b>ГЛАВНОЕ МЕНЮ</b>", reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer()
-
-@dp.message(Command("predict"))
-async def cmd_predict(message: types.Message):
-    forecast = get_match_forecast("Спартак", "Краснодар", "14.03 18:00")
-    await message.answer(forecast, parse_mode="HTML")
-
-@dp.message()
-async def echo(message: types.Message):
-    await message.answer("📱 /start — 30+ матчей 5 лиг с прогнозами!\n⚽ Каждый матч → Топ-3 ставки")
-
-async def main():
-    print("🚀 СТАВКИ v6.1 — ВСЕ МАТЧИ 5 ЛИГ!")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
