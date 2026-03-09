@@ -8,24 +8,21 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 TOKEN = os.getenv("TOKEN")
 API_KEY = os.getenv("API_KEY")
 
-if not TOKEN or not API_KEY:
-    print("🚫 TOKEN или API_KEY не найдены!")
+if not TOKEN:
+    print("🚫 TOKEN не найден!")
     exit()
-
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
 
 headers = {
     "X-RapidAPI-Key": API_KEY,
     "X-RapidAPI-Host": "v3.football.api-sports.io"
 }
 
-async def get_rpl_today():
-    """Реальные матчи РПЛ сегодня"""
+async def get_matches(league_id, league_name):
+    """Реальные матчи любой лиги"""
     url = "https://v3.football.api-sports.io/fixtures"
     params = {
         "date": "2026-03-09",
-        "league": "39",  # РПЛ
+        "league": str(league_id),
         "season": "2025"
     }
     
@@ -34,9 +31,9 @@ async def get_rpl_today():
             async with session.get(url, headers=headers, params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    matches = data["response"][:2]
+                    matches = data["response"][:3]
                     if matches:
-                        result = "⚽ <b>СЕГОДНЯ РПЛ:</b>\n\n"
+                        result = f"⚽ <b>{league_name} ({league_id}):</b>\n\n"
                         for match in matches:
                             home = match["teams"]["home"]["name"]
                             away = match["teams"]["away"]["name"]
@@ -45,7 +42,10 @@ async def get_rpl_today():
                         return result
     except:
         pass
-    return "⚽ Сегодня матчей РПЛ нет"
+    return f"⚽ Матчей {league_name} сегодня нет"
+
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
@@ -56,16 +56,16 @@ async def start(message: types.Message):
     ])
     await message.answer(
         "⚽ <b>ФУТБОЛЬНЫЙ БОТ v2.0</b>\n\n"
-        "✅ Реальные матчи API!\n"
-        "✅ Прогнозы + коэффициенты\n"
+        "✅ Реальные матчи из 5 лиг!\n"
+        "✅ API-Football\n"
         "✅ 24/7 онлайн", 
         reply_markup=keyboard, 
         parse_mode="HTML"
     )
 
 @dp.callback_query(F.data == "today")
-async def today_rpl(callback: types.CallbackQuery):
-    matches = await get_rpl_today()
+async def today(callback: types.CallbackQuery):
+    matches = await get_matches("39", "🇷🇺 РПЛ")
     await callback.message.answer(matches, parse_mode="HTML")
     await callback.answer()
 
@@ -82,15 +82,42 @@ async def predict(callback: types.CallbackQuery):
     await callback.answer()
 
 @dp.callback_query(F.data == "leagues")
-async def leagues(callback: types.CallbackQuery):
-    await callback.message.answer(
-        "📊 <b>ТОП-ЛИГИ:</b>\n\n"
-        "🇷🇺 <b>РПЛ (39)</b>\n"
-        "🏴󠁧󠁢󠁥󠁮󠁧󠁿 <b>АПЛ (39)</b>\n"
-        "🇪🇸 <b>Ла Лига (140)</b>\n"
-        "🇮🇹 <b>Серия А (135)</b>", 
+async def leagues_menu(callback: types.CallbackQuery):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🇷🇺 РПЛ", callback_data="rpl")],
+        [InlineKeyboardButton(text="🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ", callback_data="epl")],
+        [InlineKeyboardButton(text="🇪🇸 Ла Лига", callback_data="laliga")],
+        [InlineKeyboardButton(text="⭐ ЛЧ", callback_data="ucl")]
+    ])
+    await callback.message.edit_text(
+        "📊 <b>ВЫБЕРИ ЛИГУ:</b>", 
+        reply_markup=keyboard, 
         parse_mode="HTML"
     )
+    await callback.answer()
+
+@dp.callback_query(F.data == "rpl")
+async def rpl(callback: types.CallbackQuery):
+    matches = await get_matches("39", "🇷🇺 РПЛ")
+    await callback.message.answer(matches, parse_mode="HTML")
+    await callback.answer()
+
+@dp.callback_query(F.data == "epl")
+async def epl(callback: types.CallbackQuery):
+    matches = await get_matches("40", "🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ")
+    await callback.message.answer(matches, parse_mode="HTML")
+    await callback.answer()
+
+@dp.callback_query(F.data == "laliga")
+async def laliga(callback: types.CallbackQuery):
+    matches = await get_matches("140", "🇪🇸 Ла Лига")
+    await callback.message.answer(matches, parse_mode="HTML")
+    await callback.answer()
+
+@dp.callback_query(F.data == "ucl")
+async def ucl(callback: types.CallbackQuery):
+    matches = await get_matches("2", "⭐ ЛЧ")
+    await callback.message.answer(matches, parse_mode="HTML")
     await callback.answer()
 
 @dp.message()
@@ -98,8 +125,9 @@ async def echo(message: types.Message):
     await message.answer("📱 /start — главное меню")
 
 async def main():
-    print("🚀 Футбольный бот с API-Football запущен!")
+    print("🚀 Бот с 5 лигами запущен!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
