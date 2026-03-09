@@ -18,12 +18,11 @@ headers = {
 }
 
 async def get_matches(league_id, league_name):
-    """ЖИВЫЕ матчи Локо vs Ахмат"""
     url = "https://v3.football.api-sports.io/fixtures"
     params = {
         "league": str(league_id),
         "season": "2025",
-        "status": "LIV,FT,HT"  # LIVE + завершённые
+        "status": "LIV,FT,HT"
     }
     
     try:
@@ -38,7 +37,6 @@ async def get_matches(league_id, league_name):
                             home = match["teams"]["home"]["name"]
                             away = match["teams"]["away"]["name"]
                             status = match["fixture"]["status"]["short"]
-                            time = match["fixture"]["date"][11:16]
                             score = f"{match['goals']['home'] or 0}:{match['goals']['away'] or 0}"
                             result += f"🔴 <b>{home}</b> {score} <b>{away}</b> {status}\n"
                         return result
@@ -46,13 +44,8 @@ async def get_matches(league_id, league_name):
         pass
     return f"⚽ Матчей {league_name} сейчас нет"
 
-                        return result
-    except:
-        pass
-    return f"⚽ Матчей {league_name} сегодня нет"
-
 bot = Bot(token=TOKEN)
-dp = Dispatcher()  # ← ЭТО ЗДЕСЬ!
+dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
@@ -61,7 +54,7 @@ async def start(message: types.Message):
         [InlineKeyboardButton(text="🔮 Прогноз", callback_data="predict")],
         [InlineKeyboardButton(text="📊 Лиги", callback_data="leagues")]
     ])
-    await message.answer("⚽ <b>ФУТБОЛЬНЫЙ БОТ v2.0</b>\n✅ Все лиги + ML!", 
+    await message.answer("⚽ <b>ФУТБОЛЬНЫЙ БОТ v3.0 LIVE</b>\n✅ Локо vs Ахмат ПРЯМО СЕЙЧАС!", 
                         reply_markup=keyboard, parse_mode="HTML")
 
 @dp.callback_query(F.data == "today")
@@ -71,13 +64,12 @@ async def today(callback: types.CallbackQuery):
     await callback.answer()
 
 @dp.callback_query(F.data == "predict")
-async def ml_predict(callback: types.CallbackQuery):
+async def predict(callback: types.CallbackQuery):
     await callback.message.answer(
         "🤖 <b>ML-ПРОГНОЗ:</b>\n\n"
         "🏠 <b>Спартак</b> vs <b>Зенит</b>\n"
-        "⏰ 18:00 РПЛ\n\n"
         "📊 <b>65% | 20% | 15%</b>\n"
-        "💰 <b>П1 @2.10</b> (+38% EV)", 
+        "💰 <b>П1 @2.10</b>", 
         parse_mode="HTML"
     )
     await callback.answer()
@@ -93,10 +85,14 @@ async def leagues(callback: types.CallbackQuery):
     await callback.message.edit_text("📊 <b>ВЫБЕРИ ЛИГУ:</b>", reply_markup=keyboard, parse_mode="HTML")
     await callback.answer()
 
-@dp.callback_query(F.data.in_(["rpl", "epl", "laliga", "ucl"]))
+@dp.callback_query(F.data.in_(["rpl","epl","laliga","ucl"]))
 async def league_matches(callback: types.CallbackQuery):
-    league_map = {"rpl": ("39", "🇷🇺 РПЛ"), "epl": ("40", "🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ"), 
-                  "laliga": ("140", "🇪🇸 Ла Лига"), "ucl": ("2", "⭐ ЛЧ")}
+    league_map = {
+        "rpl": ("39", "🇷🇺 РПЛ"), 
+        "epl": ("40", "🏴󠁧󠁢󠁥󠁮󠁧󠁿 АПЛ"), 
+        "laliga": ("140", "🇪🇸 Ла Лига"), 
+        "ucl": ("2", "⭐ ЛЧ")
+    }
     lid, lname = league_map[callback.data]
     matches = await get_matches(lid, lname)
     await callback.message.answer(matches, parse_mode="HTML")
@@ -104,12 +100,11 @@ async def league_matches(callback: types.CallbackQuery):
 
 @dp.message()
 async def echo(message: types.Message):
-    await message.answer("📱 /start — меню")
+    await message.answer("📱 /start — меню с LIVE матчами")
 
 async def main():
-    print("🚀 Супербот с ML запущен!")
+    print("🚀 LIVE Бот с Локо vs Ахмат запущен!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-
