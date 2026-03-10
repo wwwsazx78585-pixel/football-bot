@@ -1,10 +1,12 @@
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
-import os
+TOKEN = 8750814723:AAFTt-CZLIo6Lprkn83CmfMQXaQwWcHCN04
+# TOKEN = os.getenv("TOKEN")  # закомментируй
 
-TOKEN = os.getenv("TOKEN")
 bot = Bot(token=TOKEN)
+dp = Dispatcher()
+
 dp = Dispatcher()
 
 def get_matches_with_stats(league):
