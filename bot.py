@@ -1,5 +1,4 @@
-TOKEN = 8750814723:AAFTt-CZLIo6Lprkn83CmfMQXaQwWcHCN04
-
+TOKEN = "8750814723:AAFTt-CZLIo6Lprkn83CmfMQXaQwWcHCN04"
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
